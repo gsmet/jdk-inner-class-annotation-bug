@@ -2,40 +2,37 @@ package org.hibernate.jdk.hibernateannotationbug;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Field;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 public class AnnotationNotFoundTest {
 
+	private final List<InnerClass<@MyAnno String>> listOfGenericInnerType = null;
+	private final List<ExternalClass<@MyAnno String>> listOfGenericExternalType = null;
+
 	@Test
-	public void testAnnotationFoundInExternalClass() {
-		checkAnnotationIsPresent( ExternalClassValueExtractor.class );
+	public void testAnnotationFoundInExternalClass() throws Exception {
+		checkAnnotationIsPresent( "listOfGenericExternalType" );
 	}
 
 	@Test
-	public void testAnnotationFoundInInnerClass() {
-		checkAnnotationIsPresent( InnerClassValueExtractor.class );
+	public void testAnnotationFoundInInnerClass() throws Exception {
+		checkAnnotationIsPresent( "listOfGenericInnerType" );
 	}
 
-	private void checkAnnotationIsPresent(Class<?> clazz) {
-		AnnotatedType[] annotatedInterfaces = clazz.getAnnotatedInterfaces();
-		AnnotatedParameterizedType valueExtractorType = (AnnotatedParameterizedType) annotatedInterfaces[0];
+	private void checkAnnotationIsPresent(String fieldName) throws Exception {
+		Field field = getClass().getDeclaredField( fieldName );
+		AnnotatedParameterizedType fieldType = (AnnotatedParameterizedType) field.getAnnotatedType();
 
-		AnnotatedType[] valueExtractorTypeParameters = valueExtractorType.getAnnotatedActualTypeArguments();
-		AnnotatedParameterizedType extractedEntityType = (AnnotatedParameterizedType) valueExtractorTypeParameters[0];
+		AnnotatedParameterizedType listElementType = (AnnotatedParameterizedType) fieldType.getAnnotatedActualTypeArguments()[0];
+		AnnotatedType[] elementTypeTypeArguments = listElementType.getAnnotatedActualTypeArguments();
 
-		AnnotatedType[] extractedEntityTypeParameters = extractedEntityType.getAnnotatedActualTypeArguments();
-		Assert.assertTrue( extractedEntityTypeParameters[0].isAnnotationPresent( ExtractedValue.class ) );
+		Assert.assertTrue( elementTypeTypeArguments[0].isAnnotationPresent( MyAnno.class ) );
 	}
 
 	private static class InnerClass<T> {
 	}
-
-	private static class ExternalClassValueExtractor implements ValueExtractor<ExternalClass<@ExtractedValue ?>> {
-	}
-
-	private static class InnerClassValueExtractor implements ValueExtractor<InnerClass<@ExtractedValue ?>> {
-	}
-
 }
